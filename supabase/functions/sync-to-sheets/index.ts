@@ -94,48 +94,117 @@ serve(async (req) => {
       .from('messages')
       .select('*, chat_rooms(room_name)')
       .order('created_at', { ascending: false })
-      .limit(100)
+      .limit(1000)
 
-    // Prepare data for Google Sheets
-    const sheetData = [
-      ['Room Name', 'User Name', 'Message', 'Created At', 'Room Type']
+    const { data: roomUsers } = await supabaseClient
+      .from('room_users')
+      .select('*, chat_rooms(room_name)')
+
+    // Set up database structure in Google Sheets
+    const spreadsheetId = '1C6pZibMJWg1BsNAStsyoNMgn0lPka5WPQmt-a-a_FUs'
+    
+    // Create Chat Rooms sheet
+    const roomsData = [
+      ['Room ID', 'Room Name', 'Room Type', 'Owner Name', 'Created At', 'Session ID']
+    ]
+    
+    rooms?.forEach(room => {
+      roomsData.push([
+        room.id,
+        room.room_name,
+        room.room_type,
+        room.owner_name,
+        new Date(room.created_at).toLocaleString(),
+        room.session_id
+      ])
+    })
+
+    // Create Messages sheet data
+    const messagesData = [
+      ['Message ID', 'Room Name', 'User Name', 'Message', 'Created At', 'Media URL', 'Media Type']
     ]
 
     messages?.forEach(message => {
-      sheetData.push([
+      messagesData.push([
+        message.id,
         message.chat_rooms?.room_name || 'Unknown',
         message.user_name,
         message.message || '',
         new Date(message.created_at).toLocaleString(),
-        'Chat Message'
+        message.media_url || '',
+        message.media_type || ''
       ])
     })
 
-    // Update Google Sheet
-    const spreadsheetId = '1C6pZibMJWg1BsNAStsyoNMgn0lPka5WPQmt-a-a_FUs'
-    const range = 'Sheet1!A1:E' + (sheetData.length)
-    
-    const sheetsResponse = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?valueInputOption=RAW`,
-      {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${tokenData.access_token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          values: sheetData
-        })
-      }
-    )
+    // Create Room Users sheet data
+    const usersData = [
+      ['User ID', 'Room Name', 'User Name', 'Joined At', 'Is Owner', 'Last Activity']
+    ]
 
-    const sheetsResult = await sheetsResponse.json()
+    roomUsers?.forEach(user => {
+      usersData.push([
+        user.id,
+        user.chat_rooms?.room_name || 'Unknown',
+        user.user_name,
+        new Date(user.joined_at).toLocaleString(),
+        user.is_owner ? 'Yes' : 'No',
+        new Date(user.last_activity).toLocaleString()
+      ])
+    })
+
+    // Update multiple sheets
+    const requests = [
+      // Update Chat Rooms (Sheet1)
+      fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Sheet1!A1:F${roomsData.length}?valueInputOption=RAW`,
+        {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${tokenData.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ values: roomsData })
+        }
+      ),
+      
+      // Create/Update Messages sheet
+      fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Messages!A1:G${messagesData.length}?valueInputOption=RAW`,
+        {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${tokenData.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ values: messagesData })
+        }
+      ),
+      
+      // Create/Update Users sheet
+      fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Users!A1:F${usersData.length}?valueInputOption=RAW`,
+        {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${tokenData.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ values: usersData })
+        }
+      )
+    ]
+
+    const responses = await Promise.all(requests)
+    const results = await Promise.all(responses.map(r => r.json()))
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        updatedCells: sheetsResult.updatedCells,
-        messageCount: messages?.length || 0 
+        sheetsUpdated: 3,
+        roomCount: rooms?.length || 0,
+        messageCount: messages?.length || 0,
+        userCount: roomUsers?.length || 0,
+        results: results
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 

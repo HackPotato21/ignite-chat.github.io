@@ -3,6 +3,7 @@ import { useChatContext } from '@/contexts/ChatContext';
 import { RoomList } from '@/components/RoomList';
 import { ChatRoom } from '@/components/ChatRoom';
 import { UserProfile } from '@/components/UserProfile';
+import { GoogleSheetsSync } from '@/components/GoogleSheetsSync';
 import { Button } from '@/components/ui/button';
 import { PanelLeftClose, PanelLeft } from 'lucide-react';
 
@@ -32,6 +33,9 @@ export const ChatLayout = () => {
         
         <div className="flex-1 flex flex-col overflow-hidden">
           <RoomList />
+          <div className="p-4 border-t border-border">
+            <GoogleSheetsSync />
+          </div>
           <UserProfile />
         </div>
       </div>

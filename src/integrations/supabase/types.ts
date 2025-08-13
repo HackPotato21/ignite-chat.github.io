@@ -157,6 +157,14 @@ export type Database = {
         Args: { room_uuid: string }
         Returns: number
       }
+      user_belongs_to_room: {
+        Args: { p_room_id: string; p_user_name: string }
+        Returns: boolean
+      }
+      user_has_room_access: {
+        Args: { room_uuid: string; username: string }
+        Returns: boolean
+      }
     }
     Enums: {
       room_type: "public" | "private"

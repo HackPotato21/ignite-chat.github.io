@@ -137,6 +137,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_user_room_access: {
+        Args: { room_uuid: string; username: string }
+        Returns: boolean
+      }
       cleanup_idle_users: {
         Args: Record<PropertyKey, never>
         Returns: undefined

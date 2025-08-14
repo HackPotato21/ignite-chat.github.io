@@ -137,36 +137,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      check_user_room_access: {
-        Args: { room_uuid: string; username: string }
-        Returns: boolean
-      }
       cleanup_idle_users: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
-      cleanup_user_from_room: {
-        Args: { p_room_id: string; p_user_name: string }
-        Returns: undefined
-      }
-      cleanup_user_from_room_beacon: {
-        Args: { p_room_id: string; p_user_name: string }
-        Returns: undefined
-      }
-      get_active_room_user_count: {
-        Args: { room_uuid: string }
-        Returns: number
+      get_current_user: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_room_user_count: {
-        Args: { room_uuid: string }
+        Args: { p_room_id: string }
         Returns: number
       }
-      user_belongs_to_room: {
+      user_is_in_room: {
         Args: { p_room_id: string; p_user_name: string }
-        Returns: boolean
-      }
-      user_has_room_access: {
-        Args: { room_uuid: string; username: string }
         Returns: boolean
       }
     }

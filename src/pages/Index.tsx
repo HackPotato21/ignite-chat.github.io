@@ -181,6 +181,31 @@ const Index = () => {
     scrollToBottom();
   }, [messages]);
 
+  // Test database connection
+  const testDatabaseConnection = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('chat_rooms')
+        .select('*', { count: 'exact', head: true });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Database Connected",
+        description: `Successfully connected to database. Found ${count || 0} rooms.`
+      });
+      return true;
+    } catch (error) {
+      console.error('Database connection failed:', error);
+      toast({
+        title: "Database Connection Failed",
+        description: "Failed to connect to database. Please check your connection.",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
   // Generate random session ID
   const generateSessionId = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -190,6 +215,11 @@ const Index = () => {
     }
     setSessionId(result);
   };
+
+  // Test connection on component mount
+  useEffect(() => {
+    testDatabaseConnection();
+  }, []);
 
 
   // Load public rooms with real-time updates

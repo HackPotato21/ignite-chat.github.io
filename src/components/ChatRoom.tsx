@@ -165,6 +165,13 @@ export const ChatRoom = () => {
     if (!userName || !currentRoom) return;
     
     try {
+      // Set user context first
+      await supabase.rpc('set_config', {
+        setting_name: 'app.current_user_name',
+        setting_value: userName,
+        is_local: false
+      });
+
       await supabase
         .from('room_users')
         .upsert({
@@ -183,10 +190,11 @@ export const ChatRoom = () => {
     if (!userName || !currentRoom) return;
     
     try {
-      await supabase.rpc('cleanup_user_from_room_beacon', {
-        p_room_id: currentRoom,
-        p_user_name: userName
-      });
+      await supabase
+        .from('room_users')
+        .delete()
+        .eq('room_id', currentRoom)
+        .eq('user_name', userName);
     } catch (error) {
       console.error('Error leaving room:', error);
     }
@@ -197,6 +205,13 @@ export const ChatRoom = () => {
 
     setIsSending(true);
     try {
+      // Set user context first
+      await supabase.rpc('set_config', {
+        setting_name: 'app.current_user_name',
+        setting_value: userName,
+        is_local: false
+      });
+
       const { error } = await supabase
         .from('messages')
         .insert({

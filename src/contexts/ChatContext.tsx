@@ -33,18 +33,30 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     return id;
   });
 
-  const setUserName = (name: string) => {
+  const setUserName = async (name: string) => {
     setUserNameState(name);
     localStorage.setItem('ignite-chat-username', name);
     
-    // Set the current user context for RLS using SQL
-    supabase.rpc('cleanup_idle_users'); // This will trigger the context setting in the session
+    // Set the current user context for RLS
+    try {
+      await supabase.rpc('set_config', {
+        setting_name: 'app.current_user_name',
+        setting_value: name,
+        is_local: false
+      });
+    } catch (error) {
+      console.error('Error setting user context:', error);
+    }
   };
 
   useEffect(() => {
     if (userName) {
       // Set the current user context for RLS on app load
-      supabase.rpc('cleanup_idle_users'); // This will trigger the context setting in the session
+      supabase.rpc('set_config', {
+        setting_name: 'app.current_user_name',
+        setting_value: userName,
+        is_local: false
+      }).catch(console.error);
     }
   }, [userName]);
 

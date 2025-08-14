@@ -44,7 +44,7 @@ export const RoomList = () => {
       const roomsWithCounts = await Promise.all(
         (roomsData || []).map(async (room) => {
           const { data: count } = await supabase
-            .rpc('get_active_room_user_count', { room_uuid: room.id });
+            .rpc('get_room_user_count', { p_room_id: room.id });
           
           return {
             ...room,
@@ -92,6 +92,13 @@ export const RoomList = () => {
 
     setIsCreating(true);
     try {
+      // Set user context first
+      await supabase.rpc('set_config', {
+        setting_name: 'app.current_user_name',
+        setting_value: userName,
+        is_local: false
+      });
+
       const { data: room, error } = await supabase
         .from('chat_rooms')
         .insert({
@@ -137,13 +144,20 @@ export const RoomList = () => {
     if (!userName) return;
 
     try {
+      // Set user context first
+      await supabase.rpc('set_config', {
+        setting_name: 'app.current_user_name',
+        setting_value: userName,
+        is_local: false
+      });
+
       // Check if already in room
       const { data: existingUser } = await supabase
         .from('room_users')
         .select('*')
         .eq('room_id', roomId)
         .eq('user_name', userName)
-        .single();
+        .maybeSingle();
 
       if (!existingUser) {
         // Join the room
